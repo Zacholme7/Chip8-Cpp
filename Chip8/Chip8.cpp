@@ -21,37 +21,24 @@ unsigned char fontSet[80] =
 };
 
 
-Chip8::Chip8()
+Chip8::Chip8():
+	// value init arrays and init all other values
+	memory(), 
+	registers(),
+	stack(), 
+	keypad(), 
+	screen(),
+	sp(0),
+	pc(0x200),
+	delayTimer(0),
+	soundTimer(0),
+	drawFlag(false),
+	indexReg(0)
 {
-	pc = 0x200;
-	sp = 0;
-	delayTimer = 0;
-	soundTimer = 0;
-	drawFlag = false;
-
-	// clear the memory
-	for (int i = 0; i < 4096; i++)
-	{
-		memory[i] = 0;
-	}
-
-	// clear the screen
-	for (int i = 0; i < 2048; i++)
-	{
-		screen[i] = 0;
-	}
-	
 	// load fontset into memory
 	for (int i = 0; i < 80; i++)
 	{
 		memory[i] = fontSet[i];
-	}
-
-	// clear the stack and registers
-	for (int i = 0; i < 16; i++)
-	{
-		registers[i] = 0;
-		stack[i] = 0;
 	}
 }
 
@@ -61,15 +48,7 @@ void Chip8::loadRom(const std::string& fileName)
 
 void Chip8::execute()
 {
-	/*
-		fetch opcode from pc and pc+1
-		increment pc by 2
-	*/
-
-
-
-
-	opcode = (memory[pc] << 8u) | (memory[pc + 1]);
+	uint16_t opcode = (memory[pc] << 8) | (memory[pc + 1]);
 	uint16_t nnn = opcode & 0x0FFF; 
 	uint8_t vx = (opcode & 0x0F00) >> 8;
 	uint8_t vy = (opcode & 0x00F0) >> 4;
@@ -251,6 +230,27 @@ void Chip8::execute()
 		break;
 
 	case 0xD000:
+		uint8_t height = opcode & 0x000F; // the height of the sprite
+
+		registers[0xF] = 0;
+		for (int row = 0; row < height; row++)
+		{
+			uint8_t pxByte = memory[indexReg + row];
+
+			for (int col = 0; col < 8; col++)
+			{
+				uint32_t screenByte = screen[registers[vx] + col + ((registers[vy] + row) * 64)];
+				if ((pxByte & (0x80 >> col)) != 0)
+				{
+					if (screenByte)
+					{
+						registers[0xF] = 1;
+					}
+					screenByte ^= 1;
+				}
+			}
+		}
+		drawFlag = true;
 		break;
 
 	case 0xE000:
@@ -259,8 +259,17 @@ void Chip8::execute()
 		switch(opcode & 0x000F)
 		{
 		case 0x000E:
+			// skip next instruction if val of vx == key pressed
+			if (keypad[registers[vx]])
+			{
+				pc += 2;
+			}
 			break;
 		case 0x0001:
+			if (!keypad[registers[vx]])
+			{
+				pc += 2;
+			}
 			break;
 		default:
 			std::cout << "Unknown opcode with leading E Bit" << std::endl;
@@ -277,6 +286,20 @@ void Chip8::execute()
 			registers[vx] = delayTimer;
 			break;
 		case 0x000A:
+			bool waitingForKeyPress = true;
+			for (int i = 0; i < 16; i++)
+			{
+				if (keypad[i] != 0)
+				{
+					registers[vx] = i;
+					waitingForKeyPress = false;
+					break;
+				}
+			}
+			if (waitingForKeyPress)
+			{
+				pc -= 2;
+			}
 			break;
 		case 0x0015:
 			// set delayTimer = Vx
@@ -291,22 +314,31 @@ void Chip8::execute()
 			indexReg += registers[vx];
 			break;
 		case 0x0029:
-
+			// set indexReg to location of sprite for digit VX
+			indexReg = registers[vx] * 5;
 			break;
 		case 0x0033:
+			// store hundreds, tens, ones place digets in i+2, i+1 and i
+			memory[indexReg + 2] = registers[vx] % 10;
+			memory[indexReg + 1] = (registers[vx] / 10) % 10;
+			memory[indexReg] = registers[vx] % 100;
 			break;
 		case 0x0055:
+			for (int i = 0; i <= vx; i++) 
+			{
+				memory[indexReg + i] = registers[i];
+			}
 			break;
 		case 0x0065:
+			for (int i = 0; i <= vx; i++)
+			{
+				registers[i] = memory[indexReg + i];
+			}
 			break;
 		}
 		break;
 	}
 
-
-
-
-	
 	if (delayTimer > 0)
 	{
 		--delayTimer;
