@@ -1,8 +1,6 @@
 #include "Chip8.h"
 #include "Display.h"
 
-const unsigned int videoWidth = 512;
-const unsigned int videoHeight = 256;
 uint8_t keymap[16] = {
     SDLK_x,
     SDLK_1,
@@ -22,15 +20,26 @@ uint8_t keymap[16] = {
     SDLK_v,
 };
 
+const int FPS = 60;
+const int frameDelay = 1000 / FPS;
+
+
 int main(int argc, char* args[])
 {
 	Chip8 chip8 = Chip8(); 
-	Display display(videoWidth, videoHeight);
+    chip8.loadRom("roms/INVADERS");
+	Display display(10);
+
+    int pitch = sizeof(chip8.screen[0]) * 64;
+    uint32_t frameStart;
+    int frameTime;
 
 	while (true)
 	{
+        frameStart = SDL_GetTicks();
         // CHECK KEYPRESS/RELEASE
 		SDL_Event e;
+        chip8.execute();
 		while (SDL_PollEvent(&e) != 0)
 		{
 			if (e.type == SDL_QUIT)
@@ -63,10 +72,14 @@ int main(int argc, char* args[])
         if (chip8.drawFlag)
         {
             chip8.drawFlag = false;
-
+            display.update(reinterpret_cast<void *>(chip8.screen.data()), pitch);
 
         }
-
+        frameTime = SDL_GetTicks() - frameStart;
+        if (frameDelay > frameTime)
+        {
+            SDL_Delay(frameDelay - frameTime);
+        }
         
 	}
 

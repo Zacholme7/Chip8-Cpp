@@ -6,8 +6,8 @@
 class Display
 {
 public:
-	Display(int width, int height);
-	void update();
+	Display(int scale);
+	void update(void const* pxBuffer, int pitch);
 	void close();
 private:
 	SDL_Window* window;

@@ -5,6 +5,11 @@
 #include <iostream>
 #include <string>
 #include <array>
+#include <fstream>
+#include <random>
+#include <ctime>
+#include <iomanip>
+
 class Chip8
 {
 public:
@@ -14,20 +19,18 @@ public:
 	bool getDrawflag() { return drawFlag; }
 	void setKey(int i) { keypad[i] = 1; }
 	void unsetKey(int i) { keypad[i] = 1; }
-	bool drawFlag;
+
+	bool drawFlag;								// signals for redraw
+	std::array<uint32_t, 2048> screen;			// screen display
 private:
-	std::array<uint8_t, 4096> memory; // memory space
-	std::array<uint8_t, 16> registers; // 16, 8bit registers
-	std::array<uint16_t, 16> stack;
-	std::array<uint16_t, 16> keypad;
-	std::array<uint32_t, 2048> screen;
-	uint8_t sp;				 // stack pointer
-	uint16_t pc;			 // program counter starting at 0x200
-	uint16_t indexReg;		 // index register
-	uint8_t delayTimer;      // delay timer register
-	uint8_t soundTimer;      // sound timer register
+	std::array<uint8_t, 4096> memory;			// memory space
+	std::array<uint8_t, 16> registers;			// 16, 8bit registers
+	std::array<uint16_t, 16> stack;				// stackk
+	std::array<uint16_t, 16> keypad;			// mapped keypad
+	uint8_t sp;									// stack pointer
+	uint16_t pc;								// program counter starting at 0x200
+	uint16_t indexReg;							// index register
+	uint8_t delayTimer;							// delay timer register
+	uint8_t soundTimer;							// sound timer register
 };
-
-
-
 #endif

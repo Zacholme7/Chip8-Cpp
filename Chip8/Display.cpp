@@ -1,12 +1,12 @@
 #include "Display.h"
 
-Display::Display(int width, int height)
+Display::Display(int scale)
 {
 	if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
 	{
 		std::cout << "Could not initialize SDL" << std::endl;
 	}
-	window = SDL_CreateWindow("Chip 8", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
+	window = SDL_CreateWindow("Chip 8", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 64 * scale, 32 * scale, SDL_WINDOW_SHOWN);
 	if (window == NULL)
 	{
 		std::cout << "Window could not be created" << std::endl;
@@ -19,9 +19,9 @@ Display::Display(int width, int height)
 }
 
 
-void Display::update()
+void Display::update(void const* pxBuffer, int pitch)
 {
-	SDL_UpdateTexture(texture, NULL, screenPx, 64 * sizeof(Uint32);
+	SDL_UpdateTexture(texture, NULL, pxBuffer, pitch);
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
 	SDL_RenderPresent(renderer);

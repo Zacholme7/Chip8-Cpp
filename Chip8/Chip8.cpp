@@ -40,10 +40,23 @@ Chip8::Chip8():
 	{
 		memory[i] = fontSet[i];
 	}
+	srand(time(NULL));
 }
 
 void Chip8::loadRom(const std::string& fileName)
 {
+	std::ifstream romFile(fileName, std::ios::binary | std::ios::ate);
+	std::ifstream::pos_type fileSize = romFile.tellg();
+	char* fileBuffer = new char[fileSize];
+	romFile.seekg(0, std::ios::beg);
+	romFile.read(fileBuffer, fileSize);
+	romFile.close();
+
+	for (int i = 0; i < fileSize; i++)
+	{
+		memory[512 + i] = fileBuffer[i];
+	}
+	delete[] fileBuffer;
 }
 
 void Chip8::execute()
@@ -55,7 +68,7 @@ void Chip8::execute()
 	uint8_t kk = opcode & 0x00FF;
 
 	pc += 2;
-	std::cout << "Curent Opcode: " << opcode << std::endl;
+	std::cout << "Curent Opcode: " << std::hex << opcode << std::endl;
 
 	switch (opcode & 0xF000)
 	{
@@ -150,6 +163,7 @@ void Chip8::execute()
 			break;
 
 		case 0x0004:
+		{
 			// set VF == carry and Vx = Vx + Vy
 			uint16_t result = registers[vx] + registers[vy];
 			if (result > 255)
@@ -162,7 +176,7 @@ void Chip8::execute()
 			}
 			registers[vx] = result & 0xFF;
 			break;
-
+		}
 		case 0x0005:
 			// set VF == (Vx > Vy) and Vx = Vx - Vy
 			if (registers[vx] > registers[vy])
@@ -197,7 +211,7 @@ void Chip8::execute()
 
 		case 0x000E:
 			// Vf = MSB Vx, multiply Vx by 2
-			registers[0xF] = registers[vx] >> 7;
+			registers[0xF] = (registers[vx] & 0x80) >> 7;
 			registers[vx] <<= 1;
 			break;
 
@@ -227,9 +241,12 @@ void Chip8::execute()
 		break;
 
 	case 0xC000:
+		// register[vx] = random byte & kk 
+		registers[vx] = (rand() % 255) & kk;
 		break;
 
 	case 0xD000:
+	{
 		uint8_t height = opcode & 0x000F; // the height of the sprite
 
 		registers[0xF] = 0;
@@ -239,7 +256,7 @@ void Chip8::execute()
 
 			for (int col = 0; col < 8; col++)
 			{
-				uint32_t screenByte = screen[registers[vx] + col + ((registers[vy] + row) * 64)];
+				uint32_t &screenByte = screen[registers[vx] + col + ((registers[vy] + row) * 64)];
 				if ((pxByte & (0x80 >> col)) != 0)
 				{
 					if (screenByte)
@@ -252,7 +269,7 @@ void Chip8::execute()
 		}
 		drawFlag = true;
 		break;
-
+	}
 	case 0xE000:
 
 		// opcodes with leading E bit
@@ -286,6 +303,7 @@ void Chip8::execute()
 			registers[vx] = delayTimer;
 			break;
 		case 0x000A:
+		{
 			bool waitingForKeyPress = true;
 			for (int i = 0; i < 16; i++)
 			{
@@ -301,6 +319,7 @@ void Chip8::execute()
 				pc -= 2;
 			}
 			break;
+		}
 		case 0x0015:
 			// set delayTimer = Vx
 			delayTimer = registers[vx];
