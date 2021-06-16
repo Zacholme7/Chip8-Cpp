@@ -18,10 +18,11 @@ public:
 	void execute();
 	bool getDrawflag() { return drawFlag; }
 	void setKey(int i) { keypad[i] = 1; }
-	void unsetKey(int i) { keypad[i] = 1; }
-
-	bool drawFlag;								// signals for redraw
-	std::array<uint32_t, 2048> screen;			// screen display
+	void unsetKey(int i) { keypad[i] = 0; }
+	bool getDrawFlag() { return drawFlag; }
+	void resetDrawFlag() { drawFlag = false; }
+	
+	uint8_t screen[2048];						// screen buffer
 private:
 	std::array<uint8_t, 4096> memory;			// memory space
 	std::array<uint8_t, 16> registers;			// 16, 8bit registers
@@ -32,5 +33,6 @@ private:
 	uint16_t indexReg;							// index register
 	uint8_t delayTimer;							// delay timer register
 	uint8_t soundTimer;							// sound timer register
+	bool drawFlag;								// signals for redraw
 };
 #endif

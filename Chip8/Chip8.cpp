@@ -256,14 +256,13 @@ void Chip8::execute()
 
 			for (int col = 0; col < 8; col++)
 			{
-				uint32_t &screenByte = screen[registers[vx] + col + ((registers[vy] + row) * 64)];
 				if ((pxByte & (0x80 >> col)) != 0)
 				{
-					if (screenByte)
+					if (screen[registers[vx] + col + ((registers[vy] + row) * 64)] == 1)
 					{
 						registers[0xF] = 1;
 					}
-					screenByte ^= 1;
+					screen[registers[vx] + col + ((registers[vy] + row) * 64)] ^= 1;
 				}
 			}
 		}
@@ -304,19 +303,20 @@ void Chip8::execute()
 			break;
 		case 0x000A:
 		{
-			bool waitingForKeyPress = true;
+			bool waitingForKeyPress = false;
 			for (int i = 0; i < 16; i++)
 			{
 				if (keypad[i] != 0)
 				{
 					registers[vx] = i;
-					waitingForKeyPress = false;
+					waitingForKeyPress = true;
 					break;
 				}
 			}
-			if (waitingForKeyPress)
+			if (!waitingForKeyPress)
 			{
 				pc -= 2;
+				return;
 			}
 			break;
 		}

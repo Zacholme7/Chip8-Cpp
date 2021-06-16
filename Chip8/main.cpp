@@ -1,5 +1,7 @@
 #include "Chip8.h"
 #include "Display.h"
+#include <chrono>
+#include <thread>
 
 uint8_t keymap[16] = {
     SDLK_x,
@@ -20,34 +22,27 @@ uint8_t keymap[16] = {
     SDLK_v,
 };
 
-const int FPS = 60;
-const int frameDelay = 1000 / FPS;
-
 
 int main(int argc, char* args[])
 {
 	Chip8 chip8 = Chip8(); 
-    chip8.loadRom("roms/INVADERS");
-	Display display(10);
+    chip8.loadRom("roms/MISSILE");
+	Display display;
+    bool quit = false;
+    uint32_t pixels[2048];
 
-    int pitch = sizeof(chip8.screen[0]) * 64;
-    uint32_t frameStart;
-    int frameTime;
-
-	while (true)
-	{
-        frameStart = SDL_GetTicks();
-        // CHECK KEYPRESS/RELEASE
-		SDL_Event e;
+    while (!quit)
+    {
+        SDL_Event e;
         chip8.execute();
-		while (SDL_PollEvent(&e) != 0)
-		{
-			if (e.type == SDL_QUIT)
-			{
-				exit(0);
-			}
-            else if (e.type == SDL_KEYDOWN)
+        while (SDL_PollEvent(&e) != 0)
+        {
+            switch (e.type)
             {
+            case SDL_QUIT:
+                quit = true;
+                break;
+            case SDL_KEYDOWN:
                 for (int i = 0; i < 16; i++)
                 {
                     if (e.key.keysym.sym == keymap[i])
@@ -55,9 +50,8 @@ int main(int argc, char* args[])
                         chip8.setKey(i);
                     }
                 }
-            }
-            else if (e.type == SDL_KEYUP)
-            {
+                break;
+            case SDL_KEYUP:
                 for (int i = 0; i < 16; i++)
                 {
                     if (e.key.keysym.sym == keymap[i])
@@ -65,24 +59,24 @@ int main(int argc, char* args[])
                         chip8.unsetKey(i);
                     }
                 }
+                break;
             }
-		}
-
-
-        if (chip8.drawFlag)
-        {
-            chip8.drawFlag = false;
-            display.update(reinterpret_cast<void *>(chip8.screen.data()), pitch);
-
         }
-        frameTime = SDL_GetTicks() - frameStart;
-        if (frameDelay > frameTime)
-        {
-            SDL_Delay(frameDelay - frameTime);
-        }
-        
-	}
 
-    // clean up and quit
+
+        if (chip8.getDrawFlag())
+        {
+            chip8.resetDrawFlag();
+            for (int i = 0; i < 2048; ++i)
+            {
+                pixels[i] = (chip8.screen[i] == 0) ? 0x000000FF : 0xFFFFFFFF;
+            }
+
+            display.update(pixels);
+        }
+        std::this_thread::sleep_for(std::chrono::microseconds(2000));
+    }
+
     display.close();
+    return 0;
 }
